@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}E-Bike Compare - Home{% endblock %}
+
+{% block head %}
+<style>
+    .bike-card-image {
+        height: 200px;
+        object-fit: cover;
+        width: 100%;
+    }
+    .bike-card {
+        transition: transform 0.2s;
+    }
+    .bike-card:hover {
+        transform: translateY(-5px);
+    }
+    .no-image {
+        height: 200px;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="jumbotron bg-light p-5 rounded">
+            <h1 class="display-4">E-Bike Compare</h1>
+            <p class="lead">Compare e-bikes from different manufacturers to find the perfect match for your needs.</p>
+            <hr class="my-4">
+            <p>Select e-bikes to compare their specifications and features side by side.</p>
+            <a class="btn btn-primary btn-lg" href="/compare" role="button">Start Comparing</a>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-12">
+        <h2>Available E-Bikes</h2>
+        <p>Browse our collection of e-bikes from popular manufacturers.</p>
+    </div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-3 g-4 mt-2">
+    {% for bike in bikes %}
+    <div class="col">
+        <div class="card h-100 bike-card">
+            {% if bike.images and bike.images|length > 0 %}
+                <img src="{{ url_for('static', filename=bike.images[0]) }}" class="card-img-top bike-card-image" alt="{{ bike.name }}" loading="lazy">
+            {% else %}
+                <div class="no-image">No image available</div>
+            {% endif %}
+            <div class="card-header">
+                <h5 class="card-title">{{ bike.name }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">{{ bike.website }}</h6>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    <strong>Price:</strong> {% if bike.price != 'N/A' %}${{ "%.2f"|format(bike.price) }}{% else %}{{ bike.price }}{% endif %}<br>
+                    <strong>Language:</strong> {{ bike.language }}
+                </p>
+                <a href="/compare?bike_ids={{ bike.id }}" class="btn btn-sm btn-primary">Compare This Bike</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %} 

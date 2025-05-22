@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}E-Bike Compare - Comparison{% endblock %}
+
+{% block head %}
+<style>
+    .comparison-table th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 1;
+    }
+    .spec-row {
+        background-color: #e9ecef;
+        font-weight: bold;
+    }
+    .bike-image {
+        max-width: 300px;
+        height: auto;
+        margin: 10px 0;
+    }
+    .image-cell {
+        text-align: center;
+    }
+    .no-image {
+        width: 300px;
+        height: 200px;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        margin: 10px auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>E-Bike Comparison</h1>
+        <p>Compare the specifications of different e-bikes side by side.</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Select E-Bikes to Compare</h5>
+            </div>
+            <div class="card-body">
+                <form action="/compare" method="post">
+                    <div class="row">
+                        {% for bike in all_bikes %}
+                        <div class="col-md-4 mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="bike_ids" value="{{ bike.id }}" id="bike-{{ bike.id }}"
+                                    {% if selected_bikes and bike.id in selected_bikes|map(attribute='id')|list %}checked{% endif %}>
+                                <label class="form-check-label" for="bike-{{ bike.id }}">
+                                    {{ bike.name }} ({{ bike.website }})
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3">Compare Selected</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if selected_bikes %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Comparison Results</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Specification</th>
+                                {% for bike in selected_bikes %}
+                                <th>{{ bike.name }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Images -->
+                            <tr class="spec-row">
+                                <td colspan="{{ selected_bikes|length + 1 }}">Product Images</td>
+                            </tr>
+                            <tr>
+                                <td>Main Image</td>
+                                {% for bike in selected_bikes %}
+                                <td class="image-cell">
+                                    {% if bike.images and bike.images|length > 0 %}
+                                        <img src="{{ url_for('static', filename=bike.images[0]) }}" alt="{{ bike.name }}" class="bike-image" loading="lazy">
+                                    {% else %}
+                                        <div class="no-image">No image available</div>
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+
+                            <!-- Additional Images -->
+                            {% set max_images = 0 %}
+                            {% for bike in selected_bikes %}
+                                {% if bike.images %}
+                                    {% set max_images = [max_images, bike.images|length]|max %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if max_images > 1 %}
+                            <tr>
+                                <td>Additional Images</td>
+                                {% for bike in selected_bikes %}
+                                <td class="image-cell">
+                                    {% if bike.images and bike.images|length > 1 %}
+                                        <div class="additional-images">
+                                            {% for image in bike.images[1:] %}
+                                                <img src="{{ url_for('static', filename=image) }}" alt="{{ bike.name }}" class="bike-image" loading="lazy">
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p>No additional images</p>
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endif %}
+
+                            <!-- Basic Info -->
+                            <tr class="spec-row">
+                                <td colspan="{{ selected_bikes|length + 1 }}">Basic Information</td>
+                            </tr>
+                            <tr>
+                                <td>Website</td>
+                                {% for bike in selected_bikes %}
+                                <td>{{ bike.website }}</td>
+                                {% endfor %}
+                            </tr>
+                            <tr>
+                                <td>Price</td>
+                                {% for bike in selected_bikes %}
+                                <td>{% if bike.price %}${{ "%.2f"|format(bike.price) }}{% else %}N/A{% endif %}</td>
+                                {% endfor %}
+                            </tr>
+                            <tr>
+                                <td>Product Link</td>
+                                {% for bike in selected_bikes %}
+                                <td><a href="{{ bike.url }}" target="_blank">View Product</a></td>
+                                {% endfor %}
+                            </tr>
+
+                            <!-- Motor Specifications -->
+                            <tr class="spec-row">
+                                <td colspan="{{ selected_bikes|length + 1 }}">Motor Specifications</td>
+                            </tr>
+                            <tr>
+                                <td>Motor Type</td>
+                                {% for bike in selected_bikes %}
+                                <td>{{ bike.get('motor_type', 'N/A') }}</td>
+                                {% endfor %}
+                            </tr>
+                            <tr>
+                                <td>Motor Power</td>
+                                {% for bike in selected_bikes %}
+                                <td>{{ bike.get('motor_power', 'N/A') }}</td>
+                                {% endfor %}
+                            </tr>
+
+                            <!-- Battery Specifications -->
+                            <tr class="spec-row">
+                                <td colspan="{{ selected_bikes|length + 1 }}">Battery & Range</td>
+                            </tr>
+                            <tr>
+                                <td>Battery Capacity</td>
+                                {% for bike in selected_bikes %}
+                                <td>{{ bike.get('battery_capacity', 'N/A') }}</td>
+                                {% endfor %}
+                            </tr>
+                            <tr>
+                                <td>Range</td>
+                                {% for bike in selected_bikes %}
+                                <td>{{ bike.get('range', 'N/A') }}</td>
+                                {% endfor %}
+                            </tr>
+
+                            <!-- Physical Specifications -->
+                            <tr class="spec-row">
+                                <td colspan="{{ selected_bikes|length + 1 }}">Physical Specifications</td>
+                            </tr>
+                            <tr>
+                                <td>Weight</td>
+                                {% for bike in selected_bikes %}
+                                <td>{{ bike.get('weight', 'N/A') }}</td>
+                                {% endfor %}
+                            </tr>
+                            <tr>
+                                <td>Max Load</td>
+                                {% for bike in selected_bikes %}
+                                <td>{{ bike.get('max_load', 'N/A') }}</td>
+                                {% endfor %}
+                            </tr>
+                            <tr>
+                                <td>Max Speed</td>
+                                {% for bike in selected_bikes %}
+                                <td>{{ bike.get('max_speed', 'N/A') }}</td>
+                                {% endfor %}
+                            </tr>
+
+                            <!-- Components -->
+                            <tr class="spec-row">
+                                <td colspan="{{ selected_bikes|length + 1 }}">Components</td>
+                            </tr>
+                            <tr>
+                                <td>Brakes</td>
+                                {% for bike in selected_bikes %}
+                                <td>{{ bike.get('brakes', 'N/A') }}</td>
+                                {% endfor %}
+                            </tr>
+                            <tr>
+                                <td>Tires</td>
+                                {% for bike in selected_bikes %}
+                                <td>{{ bike.get('tires', 'N/A') }}</td>
+                                {% endfor %}
+                            </tr>
+                            <tr>
+                                <td>Frame Material</td>
+                                {% for bike in selected_bikes %}
+                                <td>{{ bike.get('frame_material', 'N/A') }}</td>
+                                {% endfor %}
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Highlight differences in the comparison table
+        const comparisonTable = document.querySelector('.comparison-table');
+        if (comparisonTable) {
+            const rows = comparisonTable.querySelectorAll('tbody tr:not(.spec-row)');
+            
+            rows.forEach(row => {
+                const cells = Array.from(row.querySelectorAll('td:not(:first-child)'));
+                
+                // Skip if there's only one bike being compared
+                if (cells.length <= 1) return;
+                
+                // Check if all values are the same
+                const allSame = cells.every(cell => cell.textContent === cells[0].textContent);
+                
+                // If values differ, highlight them
+                if (!allSame) {
+                    cells.forEach(cell => {
+                        cell.classList.add('table-warning');
+                    });
+                }
+            });
+        }
+    });
+</script>
+{% endblock %} 

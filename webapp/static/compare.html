@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Bike Compare - Comparison</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .comparison-table th {
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa;
+            z-index: 1;
+        }
+        .spec-row {
+            background-color: #e9ecef;
+            font-weight: bold;
+        }
+        .bike-image {
+            max-width: 300px;
+            height: auto;
+            margin: 10px 0;
+        }
+        .image-cell {
+            text-align: center;
+        }
+        .no-image {
+            width: 300px;
+            height: 200px;
+            background-color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            margin: 10px auto;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 24px;
+            color: #6c757d;
+        }
+        .bike-checkbox {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <h1>E-Bike Comparison</h1>
+                <p>Compare the specifications of different e-bikes side by side.</p>
+                <a href="/" class="btn btn-outline-secondary mb-3">← Back to Home</a>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Select E-Bikes to Compare</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="loading">
+                            Loading bikes... <div class="spinner-border text-primary" role="status"></div>
+                        </div>
+                        <div id="bike-selection" class="row">
+                            <!-- Bike checkboxes will be loaded here -->
+                        </div>
+                        <button id="compare-btn" class="btn btn-primary mt-3">Compare Selected</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="comparison-results" class="row" style="display: none;">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Comparison Results</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="comparison-loading" class="loading">
+                            Loading comparison... <div class="spinner-border text-primary" role="status"></div>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="comparison-table" class="table table-bordered comparison-table">
+                                <!-- Comparison table will be populated here -->
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var allBikes = [];
+            var selectedBikeIds = [];
+            
+            // Check URL parameters for pre-selected bikes
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('bike_ids')) {
+                const bikeIds = urlParams.getAll('bike_ids');
+                selectedBikeIds = bikeIds;
+                
+                // Show comparison section if bikes are pre-selected
+                if (selectedBikeIds.length > 0) {
+                    $('#comparison-results').show();
+                    loadComparisonData();
+                }
+            }
+            
+            // Load all bikes
+            loadAllBikes();
+            
+            // Handle compare button click
+            $('#compare-btn').click(function() {
+                // Get selected bike IDs
+                selectedBikeIds = [];
+                $('input[name="bike_ids"]:checked').each(function() {
+                    selectedBikeIds.push($(this).val());
+                });
+                
+                if (selectedBikeIds.length === 0) {
+                    alert('Please select at least one bike to compare.');
+                    return;
+                }
+                
+                // Update URL with selected bike IDs
+                const newUrl = updateUrlParameter(window.location.href, 'bike_ids', selectedBikeIds);
+                window.history.pushState({ path: newUrl }, '', newUrl);
+                
+                // Show comparison section
+                $('#comparison-results').show();
+                
+                // Load comparison data
+                loadComparisonData();
+            });
+            
+            function loadAllBikes() {
+                $.ajax({
+                    url: '/api/bikes',
+                    method: 'GET',
+                    dataType: 'json',
+                    success: function(bikes) {
+                        allBikes = bikes;
+                        $('.loading').hide();
+                        
+                        if (!bikes || bikes.length === 0) {
+                            $('#bike-selection').html('<div class="col-12"><p>No bikes found.</p></div>');
+                            return;
+                        }
+                        
+                        // Sort bikes by website and name
+                        bikes.sort(function(a, b) {
+                            if (a.website === b.website) {
+                                const nameA = a.name || '';
+                                const nameB = b.name || '';
+                                return nameA.localeCompare(nameB);
+                            }
+                            return a.website.localeCompare(b.website);
+                        });
+                        
+                        // Filter out bikes with missing names
+                        bikes = bikes.filter(function(bike) {
+                            return bike.name || bike.name === 0;
+                        });
+                        
+                        // Replace NaN names with placeholders
+                        bikes.forEach(function(bike) {
+                            if (typeof bike.name === 'number' && isNaN(bike.name)) {
+                                bike.name = `Unnamed Bike (${bike.product_id})`;
+                            }
+                        });
+                        
+                        // Group bikes by website
+                        const bikesByWebsite = {};
+                        bikes.forEach(function(bike) {
+                            if (!bikesByWebsite[bike.website]) {
+                                bikesByWebsite[bike.website] = [];
+                            }
+                            bikesByWebsite[bike.website].push(bike);
+                        });
+                        
+                        // Render bike selection checkboxes
+                        for (const website in bikesByWebsite) {
+                            const websiteDiv = $('<div class="col-md-12 mb-3"></div>');
+                            websiteDiv.append(`<h6>${website}</h6>`);
+                            
+                            const websiteBikes = bikesByWebsite[website];
+                            const bikesDiv = $('<div class="row"></div>');
+                            
+                            websiteBikes.forEach(function(bike) {
+                                const isChecked = selectedBikeIds.includes(bike.id);
+                                const bikeCheckbox = `
+                                    <div class="col-md-4 bike-checkbox">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="bike_ids" value="${bike.id}" id="bike-${bike.id}" ${isChecked ? 'checked' : ''}>
+                                            <label class="form-check-label" for="bike-${bike.id}">
+                                                ${bike.name} (${bike.language || 'N/A'})
+                                            </label>
+                                        </div>
+                                    </div>
+                                `;
+                                bikesDiv.append(bikeCheckbox);
+                            });
+                            
+                            websiteDiv.append(bikesDiv);
+                            $('#bike-selection').append(websiteDiv);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        $('.loading').html('Error loading bikes. Please try again later.');
+                        console.error('Error fetching bikes:', error);
+                        console.error('Status:', status);
+                        console.error('Response:', xhr.responseText);
+                    }
+                });
+            }
+            
+            function loadComparisonData() {
+                $('#comparison-loading').show();
+                $('#comparison-table').empty();
+                
+                // Build URL with bike IDs
+                let url = '/api/compare?';
+                selectedBikeIds.forEach(function(bikeId) {
+                    url += 'bike_ids=' + bikeId + '&';
+                });
+                url = url.slice(0, -1); // Remove the trailing &
+                
+                $.ajax({
+                    url: url,
+                    method: 'GET',
+                    dataType: 'json',
+                    success: function(bikes) {
+                        $('#comparison-loading').hide();
+                        
+                        if (!bikes || bikes.length === 0) {
+                            $('#comparison-table').html('<tr><td>No bikes found for comparison.</td></tr>');
+                            return;
+                        }
+                        
+                        // Replace NaN names with placeholders
+                        bikes.forEach(function(bike) {
+                            if (!bike.name && bike.name !== 0) {
+                                bike.name = `Unnamed Bike (${bike.product_id})`;
+                            }
+                            if (typeof bike.name === 'number' && isNaN(bike.name)) {
+                                bike.name = `Unnamed Bike (${bike.product_id})`;
+                            }
+                        });
+                        
+                        renderComparisonTable(bikes);
+                    },
+                    error: function(xhr, status, error) {
+                        $('#comparison-loading').html('Error loading comparison data. Please try again later.');
+                        console.error('Error fetching comparison data:', error);
+                        console.error('Status:', status);
+                        console.error('Response:', xhr.responseText);
+                    }
+                });
+            }
+            
+            function renderComparisonTable(bikes) {
+                if (bikes.length === 0) {
+                    $('#comparison-table').html('<tr><td>No bikes found for comparison.</td></tr>');
+                    return;
+                }
+                
+                const table = $('#comparison-table');
+                
+                // Create header row
+                const headerRow = $('<tr></tr>');
+                headerRow.append('<th>Specification</th>');
+                bikes.forEach(function(bike) {
+                    headerRow.append(`<th>${bike.name}</th>`);
+                });
+                
+                // Create table header
+                const thead = $('<thead></thead>').append(headerRow);
+                table.append(thead);
+                
+                // Create table body
+                const tbody = $('<tbody></tbody>');
+                
+                // Images section
+                tbody.append(createSectionHeader('Product Images', bikes.length));
+                
+                // Main image row
+                const mainImageRow = $('<tr></tr>');
+                mainImageRow.append('<td>Main Image</td>');
+                
+                bikes.forEach(function(bike) {
+                    let imageCell = '';
+                    if (bike.images && Array.isArray(bike.images) && bike.images.length > 0) {
+                        imageCell = `<img src="/static/${bike.images[0]}" alt="${bike.name}" class="bike-image" loading="lazy">`;
+                    } else {
+                        imageCell = `<div class="no-image">No image available</div>`;
+                    }
+                    mainImageRow.append(`<td class="image-cell">${imageCell}</td>`);
+                });
+                tbody.append(mainImageRow);
+                
+                // Additional images (if any bike has more than one image)
+                let hasAdditionalImages = false;
+                bikes.forEach(function(bike) {
+                    if (bike.images && Array.isArray(bike.images) && bike.images.length > 1) {
+                        hasAdditionalImages = true;
+                    }
+                });
+                
+                if (hasAdditionalImages) {
+                    const additionalImagesRow = $('<tr></tr>');
+                    additionalImagesRow.append('<td>Additional Images</td>');
+                    
+                    bikes.forEach(function(bike) {
+                        let imagesHtml = '';
+                        if (bike.images && Array.isArray(bike.images) && bike.images.length > 1) {
+                            imagesHtml = '<div class="additional-images">';
+                            for (let i = 1; i < bike.images.length; i++) {
+                                imagesHtml += `<img src="/static/${bike.images[i]}" alt="${bike.name}" class="bike-image" loading="lazy">`;
+                            }
+                            imagesHtml += '</div>';
+                        } else {
+                            imagesHtml = '<p>No additional images</p>';
+                        }
+                        additionalImagesRow.append(`<td class="image-cell">${imagesHtml}</td>`);
+                    });
+                    tbody.append(additionalImagesRow);
+                }
+                
+                // Basic Information
+                tbody.append(createSectionHeader('Basic Information', bikes.length));
+                
+                // Website
+                const websiteRow = $('<tr></tr>');
+                websiteRow.append('<td>Website</td>');
+                bikes.forEach(function(bike) {
+                    websiteRow.append(`<td>${bike.website || 'N/A'}</td>`);
+                });
+                tbody.append(websiteRow);
+                
+                // Price
+                const priceRow = $('<tr></tr>');
+                priceRow.append('<td>Price</td>');
+                bikes.forEach(function(bike) {
+                    let priceText = 'N/A';
+                    if (bike.price && bike.price !== 'N/A' && !(typeof bike.price === 'number' && isNaN(bike.price))) {
+                        priceText = '$' + parseFloat(bike.price).toFixed(2);
+                    }
+                    priceRow.append(`<td>${priceText}</td>`);
+                });
+                tbody.append(priceRow);
+                
+                // Product Link
+                const linkRow = $('<tr></tr>');
+                linkRow.append('<td>Product Link</td>');
+                bikes.forEach(function(bike) {
+                    if (bike.url) {
+                        linkRow.append(`<td><a href="${bike.url}" target="_blank">View Product</a></td>`);
+                    } else {
+                        linkRow.append(`<td>N/A</td>`);
+                    }
+                });
+                tbody.append(linkRow);
+                
+                // Motor Specifications
+                tbody.append(createSectionHeader('Motor Specifications', bikes.length));
+                
+                // Motor Type
+                const motorRow = $('<tr></tr>');
+                motorRow.append('<td>Motor Type</td>');
+                bikes.forEach(function(bike) {
+                    motorRow.append(`<td>${bike.motor_type || 'N/A'}</td>`);
+                });
+                tbody.append(motorRow);
+                
+                // Battery & Range
+                tbody.append(createSectionHeader('Battery & Range', bikes.length));
+                
+                // Battery
+                const batteryRow = $('<tr></tr>');
+                batteryRow.append('<td>Battery Capacity</td>');
+                bikes.forEach(function(bike) {
+                    batteryRow.append(`<td>${bike.battery || 'N/A'}</td>`);
+                });
+                tbody.append(batteryRow);
+                
+                // Range
+                const rangeRow = $('<tr></tr>');
+                rangeRow.append('<td>Range</td>');
+                bikes.forEach(function(bike) {
+                    rangeRow.append(`<td>${bike.range || 'N/A'}</td>`);
+                });
+                tbody.append(rangeRow);
+                
+                // Physical Specifications
+                tbody.append(createSectionHeader('Physical Specifications', bikes.length));
+                
+                // Weight
+                const weightRow = $('<tr></tr>');
+                weightRow.append('<td>Weight</td>');
+                bikes.forEach(function(bike) {
+                    weightRow.append(`<td>${bike.weight || 'N/A'}</td>`);
+                });
+                tbody.append(weightRow);
+                
+                // Max Load
+                const loadRow = $('<tr></tr>');
+                loadRow.append('<td>Max Load</td>');
+                bikes.forEach(function(bike) {
+                    loadRow.append(`<td>${bike.max_load || 'N/A'}</td>`);
+                });
+                tbody.append(loadRow);
+                
+                // Max Speed
+                const speedRow = $('<tr></tr>');
+                speedRow.append('<td>Max Speed</td>');
+                bikes.forEach(function(bike) {
+                    speedRow.append(`<td>${bike.max_speed || 'N/A'}</td>`);
+                });
+                tbody.append(speedRow);
+                
+                // Add the tbody to the table
+                table.append(tbody);
+                
+                // Highlight differences
+                highlightDifferences();
+            }
+            
+            function createSectionHeader(title, colspan) {
+                return `<tr class="spec-row"><td colspan="${colspan + 1}">${title}</td></tr>`;
+            }
+            
+            function highlightDifferences() {
+                const rows = document.querySelectorAll('#comparison-table tbody tr:not(.spec-row)');
+                
+                rows.forEach(row => {
+                    const cells = Array.from(row.querySelectorAll('td:not(:first-child)'));
+                    
+                    // Skip if there's only one bike being compared
+                    if (cells.length <= 1) return;
+                    
+                    // Check if all values are the same
+                    const allSame = cells.every(cell => cell.textContent === cells[0].textContent);
+                    
+                    // If values differ, highlight them
+                    if (!allSame) {
+                        cells.forEach(cell => {
+                            cell.classList.add('table-warning');
+                        });
+                    }
+                });
+            }
+            
+            // Helper function to update URL parameters
+            function updateUrlParameter(uri, key, values) {
+                // Remove existing parameters
+                let i = uri.indexOf('?');
+                if (i !== -1) {
+                    const baseUrl = uri.substring(0, i);
+                    const queryString = uri.substring(i + 1, uri.length);
+                    const params = queryString.split('&');
+                    const resultParams = [];
+                    
+                    // Keep parameters that aren't the ones we're replacing
+                    for (let i = 0; i < params.length; i++) {
+                        const paramParts = params[i].split('=');
+                        if (paramParts[0] !== key) {
+                            resultParams.push(params[i]);
+                        }
+                    }
+                    
+                    // Add new parameters
+                    for (let i = 0; i < values.length; i++) {
+                        resultParams.push(key + '=' + values[i]);
+                    }
+                    
+                    return baseUrl + (resultParams.length > 0 ? '?' + resultParams.join('&') : '');
+                } else {
+                    // No parameters in URL yet
+                    let result = uri;
+                    if (values.length > 0) {
+                        result += '?';
+                        for (let i = 0; i < values.length; i++) {
+                            result += key + '=' + values[i];
+                            if (i < values.length - 1) {
+                                result += '&';
+                            }
+                        }
+                    }
+                    return result;
+                }
+            }
+        });
+    </script>
+</body>
+</html> 
