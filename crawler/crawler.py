@@ -303,15 +303,33 @@ def cleanup_unused_images(current_image_paths: List[str]):
     Args:
         current_image_paths: List of image paths that are currently in use
     """
+    # Skip this function if no images are provided (safety check)
+    if not current_image_paths:
+        logger.warning("No current image paths provided, skipping cleanup to prevent data loss")
+        return
+        
     current_filenames = {os.path.basename(path) for path in current_image_paths if path}
+    logger.info(f"Cleanup: Current image count: {len(current_filenames)}")
     
-    # Check all files in the images directory
+    # IMPORTANT: We should only move files that match the product_ids in the current crawl
+    # Extract product IDs from the current filenames (before the underscore)
+    current_product_ids = {filename.split('_')[0] for filename in current_filenames}
+    logger.info(f"Cleanup: Current product IDs: {current_product_ids}")
+    
+    # Check all files in the images directory, but only move those that match our current product IDs
+    moved_count = 0
     for file in IMAGES_DIR.glob('*'):
-        if file.name not in current_filenames:
+        # Only process files for product IDs we're currently handling
+        file_product_id = file.name.split('_')[0] if '_' in file.name else ''
+        
+        if file_product_id in current_product_ids and file.name not in current_filenames:
             # Move to archive
             archive_path = IMAGES_ARCHIVE_DIR / f"{datetime.datetime.now().strftime('%Y%m%d')}_{file.name}"
             shutil.move(str(file), str(archive_path))
             logger.info(f"Moved unused image {file.name} to archive")
+            moved_count += 1
+    
+    logger.info(f"Cleanup complete: {moved_count} images moved to archive")
 
 def parse_product_page(soup: BeautifulSoup, selectors: Dict[str, str], product_id: str) -> Dict[str, Any]:
     """
@@ -468,13 +486,25 @@ def save_to_csv(products: List[Dict[str, Any]], website_key: str):
     df.to_csv(filepath, index=False)
     logger.info(f"Saved {len(products)} products to {filepath}")
     
-    # Get all current image paths
+    # Get all current image paths for THIS WEBSITE ONLY
     current_images = []
     for product in products:
-        if "images" in product:
-            current_images.extend(product["images"])
+        if "images" in product and product["images"]:
+            if isinstance(product["images"], list):
+                current_images.extend(product["images"])
+            elif isinstance(product["images"], str):
+                try:
+                    image_list = json.loads(product["images"])
+                    if isinstance(image_list, list):
+                        current_images.extend(image_list)
+                except (json.JSONDecodeError, TypeError):
+                    # If not a valid JSON string, assume it's a single image path
+                    current_images.append(product["images"])
     
-    # Cleanup unused images
+    # Log image paths for debugging
+    logger.info(f"Current images for {website_key}: {len(current_images)}")
+    
+    # Cleanup unused images - but only for this website's products
     cleanup_unused_images(current_images)
 
 def run_crawler():

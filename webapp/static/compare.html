@@ -5,43 +5,222 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>E-Bike Compare - Comparison</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #3a6ea5;
+            --secondary-color: #004e98;
+            --accent-color: #ff9f1c;
+            --light-gray: #f8f9fa;
+            --dark-gray: #343a40;
+            --text-color: #212529;
+            --border-radius: 0.5rem;
+        }
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            color: var(--text-color);
+            background-color: #fcfcfc;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+        }
+        
         .comparison-table th {
             position: sticky;
             top: 0;
-            background-color: #f8f9fa;
+            background-color: white;
             z-index: 1;
+            font-weight: 600;
+            border-bottom: 2px solid var(--primary-color);
         }
+        
         .spec-row {
-            background-color: #e9ecef;
+            background: linear-gradient(to right, var(--light-gray), white);
             font-weight: bold;
+            color: var(--secondary-color);
         }
+        
         .bike-image {
             max-width: 300px;
             height: auto;
             margin: 10px 0;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
         }
+        
+        .bike-image:hover {
+            transform: scale(1.03);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+        
         .image-cell {
             text-align: center;
         }
+        
         .no-image {
             width: 300px;
             height: 200px;
-            background-color: #f8f9fa;
+            background-color: var(--light-gray);
             display: flex;
             align-items: center;
             justify-content: center;
             color: #6c757d;
             margin: 10px auto;
+            border-radius: var(--border-radius);
         }
+        
         .loading {
             text-align: center;
             padding: 50px;
             font-size: 24px;
             color: #6c757d;
         }
+        
         .bike-checkbox {
             margin-bottom: 10px;
+        }
+        
+        .filter-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        
+        .filter-group {
+            margin-bottom: 10px;
+        }
+        
+        .filter-badge {
+            margin-right: 5px;
+            margin-bottom: 5px;
+            background-color: var(--primary-color);
+        }
+        
+        .active-filters {
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .filter-controls {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            background-color: var(--light-gray);
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+        }
+        
+        .filter-controls .form-control, 
+        .filter-controls .form-select {
+            max-width: 200px;
+            margin-right: 10px;
+        }
+        
+        .highlight-differences {
+            margin-left: 15px;
+        }
+        
+        .card {
+            border-radius: var(--border-radius);
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            padding: 15px 20px;
+        }
+        
+        .card-header h5 {
+            margin-bottom: 0;
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .btn-outline-secondary {
+            color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .btn-outline-secondary:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2.5rem 0;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .hero-badge {
+            background-color: rgba(255,255,255,0.2);
+            color: white;
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+        
+        .price-highlight {
+            font-weight: 600;
+            color: var(--accent-color);
+            background-color: rgba(255, 159, 28, 0.1);
+            padding: 5px 10px;
+            border-radius: var(--border-radius);
+        }
+        
+        .table-warning {
+            background-color: rgba(255, 159, 28, 0.1) !important;
+        }
+        
+        footer {
+            background-color: var(--dark-gray);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        
+        .additional-images {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .additional-images img {
+            max-width: 100px;
+            height: auto;
+            border-radius: var(--border-radius);
+            cursor: pointer;
         }
     </style>
 </head>
@@ -49,26 +228,99 @@
     <div class="container mt-4">
         <div class="row mb-4">
             <div class="col-md-12">
-                <h1>E-Bike Comparison</h1>
-                <p>Compare the specifications of different e-bikes side by side.</p>
-                <a href="/" class="btn btn-outline-secondary mb-3">← Back to Home</a>
+                <div class="hero-section p-4 text-center">
+                    <span class="hero-badge"><i class="bi bi-lightning-charge"></i> ADVANCED COMPARISON</span>
+                    <h1 class="display-5 fw-bold mb-3">E-Bike Comparison Tool</h1>
+                    <p class="lead mb-2">Compare specifications and prices of electric bikes side by side to make an informed purchase decision.</p>
+                    <p class="small"><i class="bi bi-clock"></i> Real-time data updated daily from official sources</p>
+                    <a href="/" class="btn btn-light mt-2">← Back to Home</a>
+                </div>
             </div>
         </div>
 
         <div class="row mb-4">
             <div class="col-md-12">
                 <div class="card">
-                    <div class="card-header">
-                        <h5>Select E-Bikes to Compare</h5>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="bi bi-bicycle"></i> Select E-Bikes to Compare</h5>
+                        <span class="badge bg-primary">Step 1</span>
                     </div>
                     <div class="card-body">
+                        <div class="filter-section mb-4">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <h6>Filter Bikes</h6>
+                                    <div class="active-filters" id="active-filters">
+                                        <!-- Active filters will appear here -->
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-3 filter-group">
+                                            <label for="website-filter" class="form-label">Manufacturer</label>
+                                            <select class="form-select" id="website-filter">
+                                                <option value="">All Manufacturers</option>
+                                                <!-- Options will be populated dynamically -->
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="col-md-3 filter-group">
+                                            <label for="price-range" class="form-label">Price Range</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">$</span>
+                                                <input type="number" class="form-control" id="price-min" placeholder="Min">
+                                                <span class="input-group-text">-</span>
+                                                <input type="number" class="form-control" id="price-max" placeholder="Max">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-3 filter-group">
+                                            <label for="language-filter" class="form-label">Language</label>
+                                            <select class="form-select" id="language-filter">
+                                                <option value="">All Languages</option>
+                                                <!-- Options will be populated dynamically -->
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="col-md-3 filter-group">
+                                            <label for="has-images" class="form-label">Images</label>
+                                            <select class="form-select" id="has-images">
+                                                <option value="">All Bikes</option>
+                                                <option value="true">With Images</option>
+                                                <option value="false">Without Images</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mt-2">
+                                        <div class="col-md-6">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="search-bikes" placeholder="Search by name...">
+                                                <button class="btn btn-outline-secondary" type="button" id="search-button">
+                                                    <i class="bi bi-search"></i> Search
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6 text-end">
+                                            <button class="btn btn-primary" id="apply-filters"><i class="bi bi-funnel"></i> Apply Filters</button>
+                                            <button class="btn btn-outline-secondary" id="clear-filters"><i class="bi bi-x-circle"></i> Clear All</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="loading">
                             Loading bikes... <div class="spinner-border text-primary" role="status"></div>
                         </div>
                         <div id="bike-selection" class="row">
                             <!-- Bike checkboxes will be loaded here -->
                         </div>
-                        <button id="compare-btn" class="btn btn-primary mt-3">Compare Selected</button>
+                        <div class="mt-3">
+                            <button id="compare-btn" class="btn btn-primary"><i class="bi bi-bar-chart"></i> Compare Selected</button>
+                            <button id="select-all" class="btn btn-outline-secondary ms-2"><i class="bi bi-check-all"></i> Select All</button>
+                            <button id="deselect-all" class="btn btn-outline-secondary ms-2"><i class="bi bi-x-lg"></i> Deselect All</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -77,10 +329,26 @@
         <div id="comparison-results" class="row" style="display: none;">
             <div class="col-md-12">
                 <div class="card">
-                    <div class="card-header">
-                        <h5>Comparison Results</h5>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="bi bi-bar-chart"></i> Comparison Results</h5>
+                        <span class="badge bg-primary">Step 2</span>
                     </div>
                     <div class="card-body">
+                        <p class="text-muted mb-4">Below are the detailed specifications and prices of the selected e-bikes. The highlighted rows indicate differences between models to help you focus on key comparison points.</p>
+                        
+                        <div class="filter-controls">
+                            <select class="form-select" id="spec-filter">
+                                <option value="all">All Specifications</option>
+                                <option value="basic">Basic Information</option>
+                                <option value="motor">Motor Specifications</option>
+                                <option value="battery">Battery & Range</option>
+                                <option value="physical">Physical Specifications</option>
+                            </select>
+                            <div class="form-check form-switch highlight-differences">
+                                <input class="form-check-input" type="checkbox" id="highlight-diff" checked>
+                                <label class="form-check-label" for="highlight-diff">Highlight Differences</label>
+                            </div>
+                        </div>
                         <div id="comparison-loading" class="loading">
                             Loading comparison... <div class="spinner-border text-primary" role="status"></div>
                         </div>
@@ -95,30 +363,42 @@
         </div>
     </div>
 
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>E-Bike Compare</h4>
+                    <p>The most comprehensive e-bike comparison tool with real-time price tracking and detailed specifications.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>Data updated daily from official manufacturer websites</p>
+                    <p class="mb-0">&copy; 2025 E-Bike Compare. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         $(document).ready(function() {
             var allBikes = [];
+            var filteredBikes = [];
             var selectedBikeIds = [];
+            var bikesLoaded = false;
+            var activeFilters = {};
             
             // Check URL parameters for pre-selected bikes
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('bike_ids')) {
                 const bikeIds = urlParams.getAll('bike_ids');
                 selectedBikeIds = bikeIds;
-                
-                // Show comparison section if bikes are pre-selected
-                if (selectedBikeIds.length > 0) {
-                    $('#comparison-results').show();
-                    loadComparisonData();
-                }
             }
             
             // Load all bikes
             loadAllBikes();
             
-            // Handle compare button click
+            // Event handlers
             $('#compare-btn').click(function() {
                 // Get selected bike IDs
                 selectedBikeIds = [];
@@ -142,6 +422,44 @@
                 loadComparisonData();
             });
             
+            $('#select-all').click(function() {
+                $('#bike-selection input[type="checkbox"]').prop('checked', true);
+            });
+            
+            $('#deselect-all').click(function() {
+                $('#bike-selection input[type="checkbox"]').prop('checked', false);
+            });
+            
+            $('#apply-filters').click(function() {
+                applyFilters();
+            });
+            
+            $('#clear-filters').click(function() {
+                clearFilters();
+            });
+            
+            $('#search-button').click(function() {
+                applyFilters();
+            });
+            
+            $('#search-bikes').on('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    applyFilters();
+                }
+            });
+            
+            $('#highlight-diff').change(function() {
+                if ($(this).is(':checked')) {
+                    highlightDifferences();
+                } else {
+                    $('.table-warning').removeClass('table-warning');
+                }
+            });
+            
+            $('#spec-filter').change(function() {
+                filterSpecifications($(this).val());
+            });
+            
             function loadAllBikes() {
                 $.ajax({
                     url: '/api/bikes',
@@ -149,7 +467,9 @@
                     dataType: 'json',
                     success: function(bikes) {
                         allBikes = bikes;
+                        filteredBikes = bikes;
                         $('.loading').hide();
+                        bikesLoaded = true;
                         
                         if (!bikes || bikes.length === 0) {
                             $('#bike-selection').html('<div class="col-12"><p>No bikes found.</p></div>');
@@ -167,51 +487,27 @@
                         });
                         
                         // Filter out bikes with missing names
-                        bikes = bikes.filter(function(bike) {
+                        filteredBikes = bikes.filter(function(bike) {
                             return bike.name || bike.name === 0;
                         });
                         
                         // Replace NaN names with placeholders
-                        bikes.forEach(function(bike) {
+                        filteredBikes.forEach(function(bike) {
                             if (typeof bike.name === 'number' && isNaN(bike.name)) {
                                 bike.name = `Unnamed Bike (${bike.product_id})`;
                             }
                         });
                         
-                        // Group bikes by website
-                        const bikesByWebsite = {};
-                        bikes.forEach(function(bike) {
-                            if (!bikesByWebsite[bike.website]) {
-                                bikesByWebsite[bike.website] = [];
-                            }
-                            bikesByWebsite[bike.website].push(bike);
-                        });
+                        // Populate filter options
+                        populateFilterOptions();
                         
-                        // Render bike selection checkboxes
-                        for (const website in bikesByWebsite) {
-                            const websiteDiv = $('<div class="col-md-12 mb-3"></div>');
-                            websiteDiv.append(`<h6>${website}</h6>`);
-                            
-                            const websiteBikes = bikesByWebsite[website];
-                            const bikesDiv = $('<div class="row"></div>');
-                            
-                            websiteBikes.forEach(function(bike) {
-                                const isChecked = selectedBikeIds.includes(bike.id);
-                                const bikeCheckbox = `
-                                    <div class="col-md-4 bike-checkbox">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="bike_ids" value="${bike.id}" id="bike-${bike.id}" ${isChecked ? 'checked' : ''}>
-                                            <label class="form-check-label" for="bike-${bike.id}">
-                                                ${bike.name} (${bike.language || 'N/A'})
-                                            </label>
-                                        </div>
-                                    </div>
-                                `;
-                                bikesDiv.append(bikeCheckbox);
-                            });
-                            
-                            websiteDiv.append(bikesDiv);
-                            $('#bike-selection').append(websiteDiv);
+                        // Display bikes
+                        displayBikeSelection();
+                        
+                        // If bikes are pre-selected, show comparison section
+                        if (selectedBikeIds.length > 0) {
+                            $('#comparison-results').show();
+                            loadComparisonData();
                         }
                     },
                     error: function(xhr, status, error) {
@@ -223,48 +519,283 @@
                 });
             }
             
+            function populateFilterOptions() {
+                // Get unique values for each filter
+                const websites = [...new Set(allBikes.map(bike => bike.website).filter(Boolean))].sort();
+                const languages = [...new Set(allBikes.map(bike => bike.language).filter(Boolean))].sort();
+                
+                // Populate website filter
+                websites.forEach(website => {
+                    $('#website-filter').append(`<option value="${website}">${website}</option>`);
+                });
+                
+                // Populate language filter
+                languages.forEach(language => {
+                    $('#language-filter').append(`<option value="${language}">${language}</option>`);
+                });
+            }
+            
+            function applyFilters() {
+                // Get filter values
+                const websiteFilter = $('#website-filter').val();
+                const priceMin = $('#price-min').val() ? parseFloat($('#price-min').val()) : null;
+                const priceMax = $('#price-max').val() ? parseFloat($('#price-max').val()) : null;
+                const languageFilter = $('#language-filter').val();
+                const hasImagesFilter = $('#has-images').val();
+                const searchQuery = $('#search-bikes').val().toLowerCase();
+                
+                // Clear active filters
+                activeFilters = {};
+                
+                // Apply filters
+                filteredBikes = allBikes.filter(function(bike) {
+                    // Skip bikes with missing names
+                    if (!bike.name && bike.name !== 0) {
+                        return false;
+                    }
+                    
+                    // Website filter
+                    if (websiteFilter && bike.website !== websiteFilter) {
+                        return false;
+                    }
+                    if (websiteFilter) {
+                        activeFilters.website = websiteFilter;
+                    }
+                    
+                    // Price range filter
+                    if (priceMin !== null && (!bike.price || bike.price < priceMin)) {
+                        return false;
+                    }
+                    if (priceMax !== null && (!bike.price || bike.price > priceMax)) {
+                        return false;
+                    }
+                    if (priceMin !== null || priceMax !== null) {
+                        activeFilters.price = `$${priceMin || 0} - $${priceMax || 'max'}`;
+                    }
+                    
+                    // Language filter
+                    if (languageFilter && bike.language !== languageFilter) {
+                        return false;
+                    }
+                    if (languageFilter) {
+                        activeFilters.language = languageFilter;
+                    }
+                    
+                    // Has images filter
+                    if (hasImagesFilter === 'true' && (!bike.images || bike.images.length === 0)) {
+                        return false;
+                    }
+                    if (hasImagesFilter === 'false' && bike.images && bike.images.length > 0) {
+                        return false;
+                    }
+                    if (hasImagesFilter) {
+                        activeFilters.images = hasImagesFilter === 'true' ? 'With Images' : 'Without Images';
+                    }
+                    
+                    // Search query
+                    if (searchQuery) {
+                        const bikeName = (bike.name || '').toString().toLowerCase();
+                        if (!bikeName.includes(searchQuery)) {
+                            return false;
+                        }
+                        activeFilters.search = searchQuery;
+                    }
+                    
+                    return true;
+                });
+                
+                // Update active filters display
+                updateActiveFiltersDisplay();
+                
+                // Display filtered bikes
+                displayBikeSelection();
+            }
+            
+            function clearFilters() {
+                // Reset filter inputs
+                $('#website-filter').val('');
+                $('#price-min').val('');
+                $('#price-max').val('');
+                $('#language-filter').val('');
+                $('#has-images').val('');
+                $('#search-bikes').val('');
+                
+                // Reset filtered bikes to all bikes with names
+                filteredBikes = allBikes.filter(function(bike) {
+                    return bike.name || bike.name === 0;
+                });
+                
+                activeFilters = {};
+                
+                // Update active filters display
+                updateActiveFiltersDisplay();
+                
+                // Display all bikes
+                displayBikeSelection();
+            }
+            
+            function updateActiveFiltersDisplay() {
+                const activeFiltersContainer = $('#active-filters');
+                activeFiltersContainer.empty();
+                
+                if (Object.keys(activeFilters).length === 0) {
+                    activeFiltersContainer.append('<p class="text-muted">No active filters</p>');
+                    return;
+                }
+                
+                for (const [key, value] of Object.entries(activeFilters)) {
+                    const badge = $(`<span class="badge bg-primary filter-badge">${key}: ${value} <button type="button" class="btn-close btn-close-white" aria-label="Close" data-filter="${key}"></button></span>`);
+                    activeFiltersContainer.append(badge);
+                }
+                
+                // Add event handlers for removing filters
+                $('.btn-close').click(function() {
+                    const filterToRemove = $(this).data('filter');
+                    
+                    // Reset the corresponding filter input
+                    switch (filterToRemove) {
+                        case 'website':
+                            $('#website-filter').val('');
+                            break;
+                        case 'price':
+                            $('#price-min').val('');
+                            $('#price-max').val('');
+                            break;
+                        case 'language':
+                            $('#language-filter').val('');
+                            break;
+                        case 'images':
+                            $('#has-images').val('');
+                            break;
+                        case 'search':
+                            $('#search-bikes').val('');
+                            break;
+                    }
+                    
+                    // Apply filters again
+                    applyFilters();
+                });
+            }
+            
+            function displayBikeSelection() {
+                const bikeSelection = $('#bike-selection');
+                bikeSelection.empty();
+                
+                if (filteredBikes.length === 0) {
+                    bikeSelection.html('<div class="col-12"><p>No bikes match your filters.</p></div>');
+                    return;
+                }
+                
+                // Group bikes by website
+                const bikesByWebsite = {};
+                filteredBikes.forEach(function(bike) {
+                    if (!bikesByWebsite[bike.website]) {
+                        bikesByWebsite[bike.website] = [];
+                    }
+                    bikesByWebsite[bike.website].push(bike);
+                });
+                
+                // Render bike selection checkboxes
+                for (const website in bikesByWebsite) {
+                    const websiteDiv = $('<div class="col-md-12 mb-3"></div>');
+                    websiteDiv.append(`<h6>${website}</h6>`);
+                    
+                    const websiteBikes = bikesByWebsite[website];
+                    const bikesDiv = $('<div class="row"></div>');
+                    
+                    websiteBikes.forEach(function(bike) {
+                        const isChecked = selectedBikeIds.includes(bike.id);
+                        const bikeCheckbox = `
+                            <div class="col-md-4 bike-checkbox">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="bike_ids" value="${bike.id}" id="bike-${bike.id}" ${isChecked ? 'checked' : ''}>
+                                    <label class="form-check-label" for="bike-${bike.id}">
+                                        ${bike.name} (${bike.language || 'N/A'})
+                                    </label>
+                                </div>
+                            </div>
+                        `;
+                        bikesDiv.append(bikeCheckbox);
+                    });
+                    
+                    websiteDiv.append(bikesDiv);
+                    bikeSelection.append(websiteDiv);
+                }
+            }
+            
             function loadComparisonData() {
                 $('#comparison-loading').show();
                 $('#comparison-table').empty();
                 
-                // Build URL with bike IDs
-                let url = '/api/compare?';
-                selectedBikeIds.forEach(function(bikeId) {
-                    url += 'bike_ids=' + bikeId + '&';
-                });
-                url = url.slice(0, -1); // Remove the trailing &
+                if (selectedBikeIds.length === 0) {
+                    $('#comparison-loading').hide();
+                    $('#comparison-table').html('<tr><td>No bikes selected for comparison.</td></tr>');
+                    return;
+                }
                 
-                $.ajax({
-                    url: url,
-                    method: 'GET',
-                    dataType: 'json',
-                    success: function(bikes) {
-                        $('#comparison-loading').hide();
-                        
-                        if (!bikes || bikes.length === 0) {
-                            $('#comparison-table').html('<tr><td>No bikes found for comparison.</td></tr>');
-                            return;
-                        }
-                        
-                        // Replace NaN names with placeholders
-                        bikes.forEach(function(bike) {
-                            if (!bike.name && bike.name !== 0) {
-                                bike.name = `Unnamed Bike (${bike.product_id})`;
-                            }
-                            if (typeof bike.name === 'number' && isNaN(bike.name)) {
-                                bike.name = `Unnamed Bike (${bike.product_id})`;
-                            }
-                        });
-                        
-                        renderComparisonTable(bikes);
-                    },
-                    error: function(xhr, status, error) {
-                        $('#comparison-loading').html('Error loading comparison data. Please try again later.');
-                        console.error('Error fetching comparison data:', error);
-                        console.error('Status:', status);
-                        console.error('Response:', xhr.responseText);
+                // We already have all bike data from allBikes, so we can filter the selected bikes
+                const selectedBikes = [];
+                
+                // Find the selected bikes in the allBikes array
+                for (let bikeId of selectedBikeIds) {
+                    const bike = allBikes.find(b => b.id === bikeId);
+                    if (bike) {
+                        selectedBikes.push(bike);
+                    }
+                }
+                
+                $('#comparison-loading').hide();
+                
+                if (selectedBikes.length === 0) {
+                    $('#comparison-table').html('<tr><td>No bikes found for comparison.</td></tr>');
+                    return;
+                }
+                
+                // Replace NaN names with placeholders
+                selectedBikes.forEach(function(bike) {
+                    if (!bike.name && bike.name !== 0) {
+                        bike.name = `Unnamed Bike (${bike.product_id})`;
+                    }
+                    if (typeof bike.name === 'number' && isNaN(bike.name)) {
+                        bike.name = `Unnamed Bike (${bike.product_id})`;
                     }
                 });
+                
+                renderComparisonTable(selectedBikes);
+            }
+            
+            function filterSpecifications(filterValue) {
+                if (filterValue === 'all') {
+                    $('.spec-row, .spec-row + tr').show();
+                    return;
+                }
+                
+                // Hide all rows first
+                $('.spec-row, .spec-row + tr').hide();
+                
+                // Show only the selected section
+                switch (filterValue) {
+                    case 'basic':
+                        $('tr:contains("Basic Information")').show();
+                        $('tr:contains("Basic Information")').nextUntil('.spec-row').show();
+                        break;
+                    case 'motor':
+                        $('tr:contains("Motor Specifications")').show();
+                        $('tr:contains("Motor Specifications")').nextUntil('.spec-row').show();
+                        break;
+                    case 'battery':
+                        $('tr:contains("Battery & Range")').show();
+                        $('tr:contains("Battery & Range")').nextUntil('.spec-row').show();
+                        break;
+                    case 'physical':
+                        $('tr:contains("Physical Specifications")').show();
+                        $('tr:contains("Physical Specifications")').nextUntil('.spec-row').show();
+                        break;
+                }
+                
+                // Always show the Product Images section
+                $('tr:contains("Product Images")').show();
+                $('tr:contains("Product Images")').nextUntil('.spec-row').show();
             }
             
             function renderComparisonTable(bikes) {
@@ -297,11 +828,9 @@
                 mainImageRow.append('<td>Main Image</td>');
                 
                 bikes.forEach(function(bike) {
-                    let imageCell = '';
-                    if (bike.images && Array.isArray(bike.images) && bike.images.length > 0) {
+                    let imageCell = '<div class="no-image">No image available</div>';
+                    if (bike.images && bike.images.length > 0) {
                         imageCell = `<img src="/static/${bike.images[0]}" alt="${bike.name}" class="bike-image" loading="lazy">`;
-                    } else {
-                        imageCell = `<div class="no-image">No image available</div>`;
                     }
                     mainImageRow.append(`<td class="image-cell">${imageCell}</td>`);
                 });
@@ -310,7 +839,7 @@
                 // Additional images (if any bike has more than one image)
                 let hasAdditionalImages = false;
                 bikes.forEach(function(bike) {
-                    if (bike.images && Array.isArray(bike.images) && bike.images.length > 1) {
+                    if (bike.images && bike.images.length > 1) {
                         hasAdditionalImages = true;
                     }
                 });
@@ -320,15 +849,19 @@
                     additionalImagesRow.append('<td>Additional Images</td>');
                     
                     bikes.forEach(function(bike) {
-                        let imagesHtml = '';
-                        if (bike.images && Array.isArray(bike.images) && bike.images.length > 1) {
+                        let imagesHtml = '<p>No additional images</p>';
+                        if (bike.images && bike.images.length > 1) {
                             imagesHtml = '<div class="additional-images">';
-                            for (let i = 1; i < bike.images.length; i++) {
+                            for (let i = 1; i < (bike.images.length > 3 ? 3 : bike.images.length); i++) {
                                 imagesHtml += `<img src="/static/${bike.images[i]}" alt="${bike.name}" class="bike-image" loading="lazy">`;
                             }
                             imagesHtml += '</div>';
-                        } else {
-                            imagesHtml = '<p>No additional images</p>';
+                            
+                            // Add a view all button if there are many images
+                            if (bike.images.length > 3) {
+                                imagesHtml += `<button class="btn btn-sm btn-outline-primary mt-2 view-all-images" 
+                                                data-bike-id="${bike.id}">View all ${bike.images.length} images</button>`;
+                            }
                         }
                         additionalImagesRow.append(`<td class="image-cell">${imagesHtml}</td>`);
                     });
@@ -352,7 +885,7 @@
                 bikes.forEach(function(bike) {
                     let priceText = 'N/A';
                     if (bike.price && bike.price !== 'N/A' && !(typeof bike.price === 'number' && isNaN(bike.price))) {
-                        priceText = '$' + parseFloat(bike.price).toFixed(2);
+                        priceText = `<span class="price-highlight">$${parseFloat(bike.price).toFixed(2)}</span>`;
                     }
                     priceRow.append(`<td>${priceText}</td>`);
                 });
@@ -363,7 +896,7 @@
                 linkRow.append('<td>Product Link</td>');
                 bikes.forEach(function(bike) {
                     if (bike.url) {
-                        linkRow.append(`<td><a href="${bike.url}" target="_blank">View Product</a></td>`);
+                        linkRow.append(`<td><a href="${bike.url}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right"></i> View Product</a></td>`);
                     } else {
                         linkRow.append(`<td>N/A</td>`);
                     }
@@ -432,6 +965,15 @@
                 
                 // Highlight differences
                 highlightDifferences();
+                
+                // Set up event handlers for the view all images buttons
+                $('.view-all-images').on('click', function() {
+                    const bikeId = $(this).data('bike-id');
+                    const bike = bikes.find(b => b.id === bikeId);
+                    if (bike && bike.images) {
+                        showImagesModal(bike.name, bike.images);
+                    }
+                });
             }
             
             function createSectionHeader(title, colspan) {
@@ -457,6 +999,73 @@
                         });
                     }
                 });
+            }
+            
+            // Function to show a modal with all images for a product
+            function showImagesModal(bikeName, images) {
+                // Check if we already have a modal
+                let modal = $('#images-modal');
+                if (modal.length === 0) {
+                    // Create the modal
+                    modal = $(`
+                        <div class="modal fade" id="images-modal" tabindex="-1" aria-labelledby="imagesModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="imagesModalLabel">Images</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div id="images-carousel" class="carousel slide" data-bs-ride="carousel">
+                                            <div class="carousel-indicators"></div>
+                                            <div class="carousel-inner"></div>
+                                            <button class="carousel-control-prev" type="button" data-bs-target="#images-carousel" data-bs-slide="prev">
+                                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                                <span class="visually-hidden">Previous</span>
+                                            </button>
+                                            <button class="carousel-control-next" type="button" data-bs-target="#images-carousel" data-bs-slide="next">
+                                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                                <span class="visually-hidden">Next</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                    
+                    // Add the modal to the page
+                    $('body').append(modal);
+                }
+                
+                // Update the modal title
+                modal.find('.modal-title').text(`Images for ${bikeName}`);
+                
+                // Clear existing carousel contents
+                const indicators = modal.find('.carousel-indicators').empty();
+                const carousel = modal.find('.carousel-inner').empty();
+                
+                // Add images to the carousel
+                images.forEach(function(image, index) {
+                    // Add indicator
+                    indicators.append(`
+                        <button type="button" data-bs-target="#images-carousel" data-bs-slide-to="${index}" 
+                            ${index === 0 ? 'class="active" aria-current="true"' : ''} 
+                            aria-label="Slide ${index + 1}">
+                        </button>
+                    `);
+                    
+                    // Add image
+                    carousel.append(`
+                        <div class="carousel-item ${index === 0 ? 'active' : ''}">
+                            <img src="/static/${image}" class="d-block w-100" alt="Bike image ${index + 1}">
+                        </div>
+                    `);
+                });
+                
+                // Show the modal
+                const modalInstance = new bootstrap.Modal(modal);
+                modalInstance.show();
             }
             
             // Helper function to update URL parameters

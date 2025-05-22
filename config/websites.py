@@ -23,13 +23,13 @@ WEBSITES = {
             "name": ".title-row > h1",
             "price": ".current-price > span",
             "description": ".title-row > p",
-            "battery": "td:contains('Battery') + td",
-            "motor_type": "td:contains('Motor') + td",
-            "max_speed": "td:contains('Speed') + td",
-            "range": "td:contains('Range') + td",
-            "weight": "td:contains('Weight') + td",
-            "max_load": "td:contains('Load') + td",
-            "images": "img.product-gallery__image"
+            "battery": "cell:contains('Battery') + cell",
+            "motor_type": "cell:contains('Motor') + cell",
+            "max_speed": "cell:contains('Speed') + cell",
+            "range": "cell:contains('Range') + cell",
+            "weight": "cell:contains('Weight') + cell",
+            "max_load": "cell:contains('Load') + cell",
+            "images": ".product-detail a.show-gallery img"
         }
     },
     "engwe_eu": {
@@ -52,7 +52,7 @@ WEBSITES = {
             "range": "td:contains('Range') + td",
             "weight": "td:contains('Weight') + td",
             "max_load": "td:contains('Load') + td",
-            "images": "img.product-gallery__image"
+            "images": "img.product-image"
         }
     },
     "fiido": {
@@ -69,12 +69,12 @@ WEBSITES = {
             "name": "h1.product-meta__title",
             "price": "span.price.price--highlight, span.price:not(.price--compare)",
             "description": "div.product-meta__description-container",
-            "battery": "td:contains('Battery') + td, div.product-meta__description-container:contains('Battery')",
-            "motor_type": "td:contains('Motor') + td, div.product-meta__description-container:contains('Motor')",
-            "max_speed": "td:contains('Speed') + td, div.product-meta__description-container:contains('Speed')",
-            "range": "td:contains('Range') + td, div.product-meta__description-container:contains('Range')",
-            "weight": "td:contains('Weight') + td, div.product-meta__description-container:contains('Weight')",
-            "max_load": "td:contains('Load') + td, div.product-meta__description-container:contains('Load')",
+            "battery": "div.pi-sp:contains('Battery')",
+            "motor_type": "div.pi-sp:contains('Motor')",
+            "max_speed": "div.pi-sp:contains('Speed')",
+            "range": "div.pi-sp:contains('Range')",
+            "weight": "div.pi-sp:contains('Weight')",
+            "max_load": "div.pi-sp:contains('Load')",
             "images": "img.product-gallery__image"
         }
     }

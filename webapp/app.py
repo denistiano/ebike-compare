@@ -7,6 +7,7 @@ import glob
 import json
 import pandas as pd
 from pathlib import Path
+import re
 from flask import Flask, render_template, request, jsonify, url_for, send_from_directory
 import logging
 from flask_cors import CORS
@@ -29,6 +30,7 @@ CORS(app)  # Enable CORS for all routes
 BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CURRENT_DATA_DIR = BASE_DIR / "data" / "current"
 ARCHIVE_DATA_DIR = BASE_DIR / "data" / "archive"
+IMAGES_DIR = BASE_DIR / "webapp" / "static" / "images" / "bikes"
 
 def get_latest_data():
     """
@@ -62,9 +64,40 @@ def get_latest_data():
     
     return data
 
+def find_images_for_product(product_id):
+    """
+    Find all images in the static/images/bikes directory that match the product ID pattern.
+    
+    Args:
+        product_id: Product ID to match
+        
+    Returns:
+        List of image paths relative to the static directory
+    """
+    image_paths = []
+    
+    # Check if the images directory exists
+    if not IMAGES_DIR.exists():
+        logger.warning(f"Images directory {IMAGES_DIR} does not exist")
+        return image_paths
+    
+    # Get all files in the images directory
+    files = os.listdir(IMAGES_DIR)
+    
+    # Filter files by the product ID pattern
+    pattern = re.compile(f"^{re.escape(product_id)}_[a-zA-Z0-9]+\\.(jpg|jpeg|png|webp)$", re.IGNORECASE)
+    matching_files = [f for f in files if pattern.match(f)]
+    
+    # Convert to relative paths for the static directory
+    for file in matching_files:
+        image_paths.append(f"images/bikes/{file}")
+    
+    logger.debug(f"Found {len(image_paths)} images for product ID {product_id}: {image_paths}")
+    return image_paths
+
 def get_all_bikes():
     """
-    Get a list of all available bikes.
+    Get a list of all available bikes with complete details.
     
     Returns:
         List of dictionaries with bike information
@@ -72,96 +105,29 @@ def get_all_bikes():
     bikes = []
     data = get_latest_data()
     
+    # Get all product images from the static directory
+    logger.info(f"Scanning {IMAGES_DIR} for product images")
+    
     for website_key, df in data.items():
         for _, row in df.iterrows():
             # Create a unique bike ID that includes the website_key to avoid collisions
             unique_id = f"{website_key}_{row['product_id']}_{row['language']}"
             
-            bike_data = {
-                "id": unique_id,
-                "name": row["name"],
-                "website": row["website"],
-                "price": row.get("price", "N/A"),
-                "product_id": row["product_id"],
-                "language": row["language"],
-                "website_key": website_key  # Add website_key to differentiate between US/EU
-            }
+            # Convert the row to a dictionary for the bike data
+            bike_data = row.to_dict()
             
-            # Handle image data
-            if "images" in row:
-                try:
-                    # If images is a string, try to parse it as JSON
-                    if isinstance(row["images"], str):
-                        images = json.loads(row["images"])
-                        bike_data["images"] = images
-                    # If images is already a list, use it
-                    elif isinstance(row["images"], list):
-                        bike_data["images"] = row["images"]
-                    else:
-                        bike_data["images"] = None
-                except (json.JSONDecodeError, TypeError):
-                    bike_data["images"] = None
+            # Add additional fields for consistency
+            bike_data["id"] = unique_id
+            bike_data["website_key"] = website_key
+            
+            # Find images for this product ID
+            product_id = bike_data["product_id"]
+            images = find_images_for_product(product_id)
+            bike_data["images"] = images
             
             bikes.append(bike_data)
     
-    return bikes
-
-def get_bike_details(bike_ids):
-    """
-    Get detailed information for the specified bikes.
-    
-    Args:
-        bike_ids: List of bike IDs (website_key_product_id_language)
-        
-    Returns:
-        List of bike data dictionaries
-    """
-    bikes = []
-    data = get_latest_data()
-    
-    for bike_id in bike_ids:
-        parts = bike_id.split("_")
-        if len(parts) < 3:
-            continue  # Skip invalid IDs
-            
-        website_key = parts[0]
-        product_id = parts[1]
-        language = parts[2]
-        
-        if website_key in data:
-            df = data[website_key]
-            
-            # Filter by product_id
-            bike_df = df[df["product_id"] == product_id]
-            
-            # Filter by language
-            bike_df = bike_df[bike_df["language"] == language]
-            
-            if not bike_df.empty:
-                # Convert the first matching row to a dictionary
-                bike_data = bike_df.iloc[0].to_dict()
-                
-                # Add the id field and website_key for consistency
-                bike_data["id"] = bike_id
-                bike_data["website_key"] = website_key
-                
-                # Handle image data
-                if "images" in bike_data:
-                    try:
-                        # If images is a string, try to parse it as JSON
-                        if isinstance(bike_data["images"], str):
-                            images = json.loads(bike_data["images"])
-                            bike_data["images"] = images
-                        # If images is already a list, use it
-                        elif isinstance(bike_data["images"], list):
-                            bike_data["images"] = bike_data["images"]
-                        else:
-                            bike_data["images"] = None
-                    except (json.JSONDecodeError, TypeError):
-                        bike_data["images"] = None
-                
-                bikes.append(bike_data)
-    
+    logger.info(f"Processed {len(bikes)} bikes with images")
     return bikes
 
 @app.route("/")
@@ -176,7 +142,7 @@ def compare():
 
 @app.route("/api/bikes")
 def api_bikes():
-    """API endpoint to get all bikes."""
+    """API endpoint to get all bikes with complete details."""
     all_bikes = get_all_bikes()
     
     # Clean up NaN values in the response
@@ -186,20 +152,6 @@ def api_bikes():
                 bike[key] = None
     
     return jsonify(all_bikes)
-
-@app.route("/api/compare", methods=["GET"])
-def api_compare():
-    """API endpoint to get comparison data."""
-    bike_ids = request.args.getlist("bike_ids")
-    bikes = get_bike_details(bike_ids)
-    
-    # Clean up NaN values in the response
-    for bike in bikes:
-        for key, value in bike.items():
-            if isinstance(value, float) and pd.isna(value):
-                bike[key] = None
-    
-    return jsonify(bikes)
 
 if __name__ == "__main__":
     app.run(debug=True) 
