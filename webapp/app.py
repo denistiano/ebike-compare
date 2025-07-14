@@ -30,7 +30,6 @@ CORS(app)  # Enable CORS for all routes
 BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CURRENT_DATA_DIR = BASE_DIR / "data" / "current"
 ARCHIVE_DATA_DIR = BASE_DIR / "data" / "archive"
-IMAGES_DIR = BASE_DIR / "webapp" / "static" / "images" / "bikes"
 
 def get_latest_data():
     """
@@ -64,36 +63,43 @@ def get_latest_data():
     
     return data
 
-def find_images_for_product(product_id):
+def get_original_images(product_data):
     """
-    Find all images in the static/images/bikes directory that match the product ID pattern.
+    Get original image URLs from product data.
     
     Args:
-        product_id: Product ID to match
+        product_data: Product data dictionary with original_images field
         
     Returns:
-        List of image paths relative to the static directory
+        List of image URLs
     """
-    image_paths = []
+    image_urls = []
     
-    # Check if the images directory exists
-    if not IMAGES_DIR.exists():
-        logger.warning(f"Images directory {IMAGES_DIR} does not exist")
-        return image_paths
+    if 'original_images' in product_data and product_data['original_images']:
+        # Handle string representation of list
+        if isinstance(product_data['original_images'], str):
+            try:
+                urls = eval(product_data['original_images'])
+                if isinstance(urls, list):
+                    image_urls = urls
+            except (SyntaxError, ValueError):
+                logger.warning(f"Could not parse original_images: {product_data['original_images']}")
+        # Handle actual list
+        elif isinstance(product_data['original_images'], list):
+            image_urls = product_data['original_images']
     
-    # Get all files in the images directory
-    files = os.listdir(IMAGES_DIR)
+    # Clean up URLs
+    valid_urls = []
+    for url in image_urls:
+        if url:
+            # Ensure URL has proper scheme
+            if url.startswith('//'):
+                url = 'https:' + url
+            # Replace variable width placeholders with fixed width
+            url = re.sub(r'\{width\}x', '1000x', url)
+            valid_urls.append(url)
     
-    # Filter files by the product ID pattern
-    pattern = re.compile(f"^{re.escape(product_id)}_[a-zA-Z0-9]+\\.(jpg|jpeg|png|webp)$", re.IGNORECASE)
-    matching_files = [f for f in files if pattern.match(f)]
-    
-    # Convert to relative paths for the static directory
-    for file in matching_files:
-        image_paths.append(f"images/bikes/{file}")
-    
-    logger.debug(f"Found {len(image_paths)} images for product ID {product_id}: {image_paths}")
-    return image_paths
+    return valid_urls
 
 def get_all_bikes():
     """
@@ -104,9 +110,6 @@ def get_all_bikes():
     """
     bikes = []
     data = get_latest_data()
-    
-    # Get all product images from the static directory
-    logger.info(f"Scanning {IMAGES_DIR} for product images")
     
     for website_key, df in data.items():
         for _, row in df.iterrows():
@@ -120,10 +123,9 @@ def get_all_bikes():
             bike_data["id"] = unique_id
             bike_data["website_key"] = website_key
             
-            # Find images for this product ID
-            product_id = bike_data["product_id"]
-            images = find_images_for_product(product_id)
-            bike_data["images"] = images
+            # Get original image URLs instead of local file paths
+            image_urls = get_original_images(bike_data)
+            bike_data["images"] = image_urls
             
             bikes.append(bike_data)
     

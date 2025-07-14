@@ -111,8 +111,8 @@ def extract_product_id_from_url(url: str, base_url: str, product_url_template: s
     Returns:
         Product ID or None if not found
     """
-    # Normalize URLs
-    url = url.rstrip('/')
+    # Normalize URLs and remove query parameters
+    url = url.split('?')[0].rstrip('/')
     base_url = base_url.rstrip('/')
     
     # Extract the path part of the URL
@@ -125,17 +125,41 @@ def extract_product_id_from_url(url: str, base_url: str, product_url_template: s
         parsed_url = urlparse(url)
         path = parsed_url.path
     
+    # Find the marker in the product URL template
+    template_path = urlparse(product_url_template).path
+    marker_match = re.search(r'\{product_id\}', template_path)
+    
+    if marker_match:
+        # Get the pattern before the {product_id} marker
+        marker_index = template_path.index('{product_id}')
+        pattern_before = template_path[:marker_index]
+        
+        # Find where this pattern occurs in the URL path
+        if pattern_before in path:
+            product_id_start = path.index(pattern_before) + len(pattern_before)
+            product_id = path[product_id_start:]
+            
+            # Remove trailing slash if present
+            product_id = product_id.rstrip('/')
+            
+            if product_id:
+                logger.debug(f"Extracted product ID '{product_id}' from {url}")
+                return product_id
+    
+    # Fallback to the old method if the above approach doesn't work
     # Split the path into components
     path_parts = path.strip('/').split('/')
     
     # Look for the product ID in different URL patterns
-    if 'products' in path_parts:
-        products_index = path_parts.index('products')
-        if products_index < len(path_parts) - 1:
-            # Handle both /products/id and /collections/name/products/id patterns
-            product_id = path_parts[products_index + 1]
-            logger.debug(f"Extracted product ID {product_id} from {url}")
-            return product_id
+    markers = ['products', 'bikes', 'p']
+    for marker in markers:
+        if marker in path_parts:
+            marker_index = path_parts.index(marker)
+            if marker_index < len(path_parts) - 1:
+                # Everything after the marker is the product ID
+                product_id = '/'.join(path_parts[marker_index + 1:])
+                logger.debug(f"Extracted product ID '{product_id}' from {url} using fallback method")
+                return product_id
     
     logger.warning(f"Could not extract product ID from {url}")
     return None
@@ -257,9 +281,12 @@ def get_image_filename(url: str, product_id: str) -> str:
     if not ext or ext not in ['.jpg', '.jpeg', '.png', '.webp']:
         ext = '.jpg'  # Default to jpg
     
+    # Replace slashes with hyphens in the product_id for filesystem safety
+    safe_product_id = product_id.replace('/', '-')
+    
     # Create a unique filename using product_id and URL hash
     url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
-    return f"{product_id}_{url_hash}{ext}"
+    return f"{safe_product_id}_{url_hash}{ext}"
 
 def download_image(url: str, product_id: str) -> Optional[str]:
     """
@@ -311,18 +338,30 @@ def cleanup_unused_images(current_image_paths: List[str]):
     current_filenames = {os.path.basename(path) for path in current_image_paths if path}
     logger.info(f"Cleanup: Current image count: {len(current_filenames)}")
     
-    # IMPORTANT: We should only move files that match the product_ids in the current crawl
     # Extract product IDs from the current filenames (before the underscore)
-    current_product_ids = {filename.split('_')[0] for filename in current_filenames}
+    # Note: Product IDs with slashes are stored with hyphens in filenames
+    current_product_ids = set()
+    for filename in current_filenames:
+        if '_' in filename:
+            product_id = filename.split('_')[0]
+            current_product_ids.add(product_id)
+            # Also add variants with hyphens replaced by slashes for matching
+            if '-' in product_id:
+                current_product_ids.add(product_id.replace('-', '/'))
+    
     logger.info(f"Cleanup: Current product IDs: {current_product_ids}")
     
     # Check all files in the images directory, but only move those that match our current product IDs
     moved_count = 0
     for file in IMAGES_DIR.glob('*'):
-        # Only process files for product IDs we're currently handling
+        # Get the product ID from the filename
         file_product_id = file.name.split('_')[0] if '_' in file.name else ''
         
-        if file_product_id in current_product_ids and file.name not in current_filenames:
+        # Also check variants with slashes replaced by hyphens
+        match_found = (file_product_id in current_product_ids)
+        
+        # If the product ID matches but the full filename doesn't exist in current_filenames
+        if match_found and file.name not in current_filenames:
             # Move to archive
             archive_path = IMAGES_ARCHIVE_DIR / f"{datetime.datetime.now().strftime('%Y%m%d')}_{file.name}"
             shutil.move(str(file), str(archive_path))
@@ -370,7 +409,6 @@ def parse_product_page(soup: BeautifulSoup, selectors: Dict[str, str], product_i
     # Extract and download images
     if "images" in selectors:
         images = []
-        image_paths = []
         
         # Extract image URLs
         for img in soup.select(selectors["images"]):
@@ -388,14 +426,9 @@ def parse_product_page(soup: BeautifulSoup, selectors: Dict[str, str], product_i
                     data_src = 'https:' + data_src
                 images.append(data_src)
         
-        # Download images and get local paths
-        for url in images:
-            local_path = download_image(url, product_id)
-            if local_path:
-                image_paths.append(local_path)
-        
-        if image_paths:
-            product_data["images"] = image_paths
+        # Store original image URLs directly without downloading
+        if images:
+            product_data["images"] = images
             product_data["original_images"] = images  # Keep original URLs for reference
     
     return product_data
@@ -424,6 +457,7 @@ def crawl_website(website_config: Dict[str, Any]) -> List[Dict[str, Any]]:
     for product_id in product_ids:
         for lang in website_config["languages"]:
             # Format the product URL
+            # Handle product IDs with slashes correctly
             product_url = website_config["product_url_template"].format(product_id=product_id)
             
             # Add language parameter if needed
@@ -460,7 +494,7 @@ def crawl_website(website_config: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 def save_to_csv(products: List[Dict[str, Any]], website_key: str):
     """
-    Save product data to CSV and cleanup unused images.
+    Save product data to CSV.
     
     Args:
         products: List of product data dictionaries
@@ -485,32 +519,14 @@ def save_to_csv(products: List[Dict[str, Any]], website_key: str):
     df = pd.DataFrame(products)
     df.to_csv(filepath, index=False)
     logger.info(f"Saved {len(products)} products to {filepath}")
-    
-    # Get all current image paths for THIS WEBSITE ONLY
-    current_images = []
-    for product in products:
-        if "images" in product and product["images"]:
-            if isinstance(product["images"], list):
-                current_images.extend(product["images"])
-            elif isinstance(product["images"], str):
-                try:
-                    image_list = json.loads(product["images"])
-                    if isinstance(image_list, list):
-                        current_images.extend(image_list)
-                except (json.JSONDecodeError, TypeError):
-                    # If not a valid JSON string, assume it's a single image path
-                    current_images.append(product["images"])
-    
-    # Log image paths for debugging
-    logger.info(f"Current images for {website_key}: {len(current_images)}")
-    
-    # Cleanup unused images - but only for this website's products
-    cleanup_unused_images(current_images)
 
 def run_crawler():
     """Main function to run the crawler for all configured websites."""
     logger.info("Starting crawler run")
-    setup_directories()
+    
+    # Ensure data directories exist
+    os.makedirs(CURRENT_DATA_DIR, exist_ok=True)
+    os.makedirs(ARCHIVE_DATA_DIR, exist_ok=True)
     
     for website_key, website_config in WEBSITES.items():
         try:

@@ -182,6 +182,34 @@
             padding: 2rem 0;
             margin-top: 3rem;
         }
+        
+        /* Checkbox dropdown styles */
+        .dropdown-menu {
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .dropdown-menu .form-check {
+            margin-bottom: 0;
+        }
+        
+        .dropdown-menu .form-check:hover {
+            background-color: var(--light-gray);
+        }
+        
+        .dropdown-menu .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .dropdown-toggle {
+            border-color: #dee2e6;
+        }
+        
+        .dropdown-toggle:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(58, 110, 165, 0.25);
+        }
     </style>
 </head>
 <body>
@@ -249,18 +277,16 @@
                             <div class="row mt-2">
                                 <div class="col-md-4 filter-group">
                                     <label for="battery-filter" class="form-label">Battery</label>
-                                    <select class="form-select" id="battery-filter">
-                                        <option value="">All Batteries</option>
-                                        <!-- Options will be populated dynamically -->
-                                    </select>
+                                    <div id="battery-filter">
+                                        <!-- Battery checkbox dropdown will be populated here -->
+                                    </div>
                                 </div>
                                 
                                 <div class="col-md-4 filter-group">
                                     <label for="motor-filter" class="form-label">Motor Type</label>
-                                    <select class="form-select" id="motor-filter">
-                                        <option value="">All Motors</option>
-                                        <!-- Options will be populated dynamically -->
-                                    </select>
+                                    <div id="motor-filter">
+                                        <!-- Motor checkbox dropdown will be populated here -->
+                                    </div>
                                 </div>
                                 
                                 <div class="col-md-4 filter-group">
@@ -413,8 +439,38 @@
                 // Get unique values for each filter
                 const websites = [...new Set(allBikes.map(bike => bike.website).filter(Boolean))].sort();
                 const languages = [...new Set(allBikes.map(bike => bike.language).filter(Boolean))].sort();
-                const batteries = [...new Set(allBikes.map(bike => bike.battery).filter(Boolean))].sort();
-                const motorTypes = [...new Set(allBikes.map(bike => bike.motor_type).filter(Boolean))].sort();
+                
+                // Extract and standardize battery values (Ah)
+                const batteryValues = new Set();
+                allBikes.forEach(bike => {
+                    if (bike.battery) {
+                        const ahMatch = bike.battery.match(/(\d+(?:\.\d+)?)\s*ah/i);
+                        if (ahMatch) {
+                            batteryValues.add(`${ahMatch[1]}Ah`);
+                        }
+                    }
+                });
+                const batteries = [...batteryValues].sort((a, b) => {
+                    const aNum = parseFloat(a.replace('Ah', ''));
+                    const bNum = parseFloat(b.replace('Ah', ''));
+                    return aNum - bNum;
+                });
+                
+                // Extract and standardize motor values (W)
+                const motorValues = new Set();
+                allBikes.forEach(bike => {
+                    if (bike.motor_type) {
+                        const wMatch = bike.motor_type.match(/(\d+(?:\.\d+)?)\s*w/i);
+                        if (wMatch) {
+                            motorValues.add(`${wMatch[1]}W`);
+                        }
+                    }
+                });
+                const motorTypes = [...motorValues].sort((a, b) => {
+                    const aNum = parseFloat(a.replace('W', ''));
+                    const bNum = parseFloat(b.replace('W', ''));
+                    return aNum - bNum;
+                });
                 
                 // Populate website filter
                 websites.forEach(website => {
@@ -426,15 +482,60 @@
                     $('#language-filter').append(`<option value="${language}">${language}</option>`);
                 });
                 
-                // Populate battery filter
-                batteries.forEach(battery => {
-                    $('#battery-filter').append(`<option value="${battery}">${battery}</option>`);
-                });
+                // Populate battery filter with checkboxes
+                populateCheckboxFilter('#battery-filter', batteries, 'battery');
                 
-                // Populate motor type filter
-                motorTypes.forEach(motorType => {
-                    $('#motor-filter').append(`<option value="${motorType}">${motorType}</option>`);
+                // Populate motor type filter with checkboxes
+                populateCheckboxFilter('#motor-filter', motorTypes, 'motor');
+            }
+            
+            // Function to populate checkbox filters
+            function populateCheckboxFilter(containerId, options, filterType) {
+                const container = $(containerId);
+                container.empty();
+                
+                // Create dropdown structure
+                const dropdownHtml = `
+                    <div class="dropdown w-100">
+                        <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="filter-text">All ${filterType === 'battery' ? 'Batteries' : 'Motors'}</span>
+                        </button>
+                        <ul class="dropdown-menu w-100" style="max-height: 300px; overflow-y: auto;">
+                            ${options.map(option => `
+                                <li>
+                                    <div class="form-check px-3 py-1">
+                                        <input class="form-check-input ${filterType}-checkbox" type="checkbox" value="${option}" id="${filterType}-${option}">
+                                        <label class="form-check-label" for="${filterType}-${option}">
+                                            ${option}
+                                        </label>
+                                    </div>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+                
+                container.html(dropdownHtml);
+                
+                // Add event listener for checkbox changes
+                container.find(`.${filterType}-checkbox`).change(function() {
+                    updateFilterText(containerId, filterType);
                 });
+            }
+            
+            // Function to update filter button text
+            function updateFilterText(containerId, filterType) {
+                const container = $(containerId);
+                const checkedBoxes = container.find('input[type="checkbox"]:checked');
+                const filterText = container.find('.filter-text');
+                
+                if (checkedBoxes.length === 0) {
+                    filterText.text(`All ${filterType === 'battery' ? 'Batteries' : 'Motors'}`);
+                } else if (checkedBoxes.length === 1) {
+                    filterText.text(checkedBoxes.first().val());
+                } else {
+                    filterText.text(`${checkedBoxes.length} selected`);
+                }
             }
             
             // Function to apply filters
@@ -444,9 +545,16 @@
                 const priceMin = $('#price-min').val() ? parseFloat($('#price-min').val()) : null;
                 const priceMax = $('#price-max').val() ? parseFloat($('#price-max').val()) : null;
                 const languageFilter = $('#language-filter').val();
-                const batteryFilter = $('#battery-filter').val();
-                const motorFilter = $('#motor-filter').val();
                 const hasImagesFilter = $('#has-images').val();
+                
+                // Get selected battery and motor values
+                const selectedBatteries = $('#battery-filter input[type="checkbox"]:checked').map(function() {
+                    return $(this).val();
+                }).get();
+                
+                const selectedMotors = $('#motor-filter input[type="checkbox"]:checked').map(function() {
+                    return $(this).val();
+                }).get();
                 
                 // Clear active filters
                 activeFilters = {};
@@ -480,20 +588,36 @@
                         activeFilters.language = languageFilter;
                     }
                     
-                    // Battery filter
-                    if (batteryFilter && bike.battery !== batteryFilter) {
-                        return false;
-                    }
-                    if (batteryFilter) {
-                        activeFilters.battery = batteryFilter;
+                    // Battery filter with standardized values
+                    if (selectedBatteries.length > 0) {
+                        if (!bike.battery) {
+                            return false;
+                        }
+                        const ahMatch = bike.battery.match(/(\d+(?:\.\d+)?)\s*ah/i);
+                        if (!ahMatch) {
+                            return false;
+                        }
+                        const standardizedBattery = `${ahMatch[1]}Ah`;
+                        if (!selectedBatteries.includes(standardizedBattery)) {
+                            return false;
+                        }
+                        activeFilters.battery = selectedBatteries.join(', ');
                     }
                     
-                    // Motor type filter
-                    if (motorFilter && bike.motor_type !== motorFilter) {
-                        return false;
-                    }
-                    if (motorFilter) {
-                        activeFilters.motor = motorFilter;
+                    // Motor type filter with standardized values
+                    if (selectedMotors.length > 0) {
+                        if (!bike.motor_type) {
+                            return false;
+                        }
+                        const wMatch = bike.motor_type.match(/(\d+(?:\.\d+)?)\s*w/i);
+                        if (!wMatch) {
+                            return false;
+                        }
+                        const standardizedMotor = `${wMatch[1]}W`;
+                        if (!selectedMotors.includes(standardizedMotor)) {
+                            return false;
+                        }
+                        activeFilters.motor = selectedMotors.join(', ');
                     }
                     
                     // Has images filter
@@ -530,9 +654,15 @@
                 $('#price-min').val('');
                 $('#price-max').val('');
                 $('#language-filter').val('');
-                $('#battery-filter').val('');
-                $('#motor-filter').val('');
                 $('#has-images').val('');
+                
+                // Clear battery and motor checkboxes
+                $('#battery-filter input[type="checkbox"]').prop('checked', false);
+                $('#motor-filter input[type="checkbox"]').prop('checked', false);
+                
+                // Update filter button texts
+                updateFilterText('#battery-filter', 'battery');
+                updateFilterText('#motor-filter', 'motor');
                 
                 // Reset filtered bikes to all bikes
                 filteredBikes = allBikes;
@@ -583,10 +713,12 @@
                             $('#language-filter').val('');
                             break;
                         case 'battery':
-                            $('#battery-filter').val('');
+                            $('#battery-filter input[type="checkbox"]').prop('checked', false);
+                            updateFilterText('#battery-filter', 'battery');
                             break;
                         case 'motor':
-                            $('#motor-filter').val('');
+                            $('#motor-filter input[type="checkbox"]').prop('checked', false);
+                            updateFilterText('#motor-filter', 'motor');
                             break;
                         case 'images':
                             $('#has-images').val('');
@@ -742,7 +874,7 @@
                 // Create image HTML
                 let imageHtml = '<div class="no-image">No image available</div>';
                 if (bike.images && bike.images.length > 0) {
-                    imageHtml = `<img src="/static/${bike.images[0]}" class="card-img-top bike-card-image" alt="${bike.name}" loading="lazy">`;
+                    imageHtml = `<img src="${bike.images[0]}" class="card-img-top bike-card-image" alt="${bike.name}" loading="lazy">`;
                 }
                 
                 // Format price
