@@ -1,3 +1,0 @@
-"""
-E-Bike Compare package.
-""" 

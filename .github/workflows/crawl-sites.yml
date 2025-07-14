@@ -1,0 +1,70 @@
+name: Crawl E-Bike Sites
+
+on:
+  schedule:
+    # Run daily at 6 AM UTC (2 AM EST, 8 AM CET)
+    - cron: '0 6 * * *'
+  workflow_dispatch: # Allow manual triggering
+    inputs:
+      sites:
+        description: 'Specific sites to crawl (comma-separated, leave empty for all)'
+        required: false
+        default: ''
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install beautifulsoup4 requests pandas lxml html5lib
+          
+      - name: Run crawler
+        run: |
+          cd src/crawlers
+          python -m crawler
+          
+      - name: Check for changes
+        id: check_changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Check if there are any changes
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+            git add .
+            git status
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+            echo "No changes to commit"
+          fi
+          
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          git commit -m "🤖 Auto-update e-bike data - $(date '+%Y-%m-%d %H:%M UTC')"
+          git push
+          
+      - name: Trigger site rebuild
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          # Trigger the deploy workflow
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/deploy-site.yml/dispatches" \
+            -d '{"ref":"${{ github.ref }}"}' 
