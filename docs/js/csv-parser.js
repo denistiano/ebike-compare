@@ -163,14 +163,15 @@ class CSVParser {
             'lectric_ebikes'
         ];
 
+        // Check for files from the last 30 days to be more robust
+        const dates = [];
         const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
         
-        const dates = [
-            today.toISOString().slice(0, 10).replace(/-/g, ''),
-            yesterday.toISOString().slice(0, 10).replace(/-/g, '')
-        ];
+        for (let i = 0; i < 30; i++) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            dates.push(date.toISOString().slice(0, 10).replace(/-/g, ''));
+        }
 
         const possibleUrls = [];
         
@@ -195,7 +196,20 @@ class CSVParser {
         });
 
         await Promise.all(testPromises);
-        return existingUrls;
+        
+        // Return only the most recent file for each manufacturer
+        const latestFiles = new Map();
+        existingUrls.forEach(url => {
+            const filename = url.split('/').pop();
+            const manufacturer = filename.split('_').slice(0, -1).join('_');
+            const date = filename.split('_').pop().replace('.csv', '');
+            
+            if (!latestFiles.has(manufacturer) || date > latestFiles.get(manufacturer).date) {
+                latestFiles.set(manufacturer, { url, date });
+            }
+        });
+        
+        return Array.from(latestFiles.values()).map(item => item.url);
     }
 }
 

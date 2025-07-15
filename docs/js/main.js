@@ -68,9 +68,13 @@ class EBikeApp {
         // Try to load from existing CSV files in the data directory
         // This is a fallback when discovery fails
         const possibleFiles = [
-            'data/trek_international_20250101.csv',
-            'data/specialized_usa_20250101.csv',
-            'data/cube_bikes_20250101.csv'
+            'data/aventon_20250523.csv',
+            'data/cube_bikes_20250523.csv',
+            'data/engwe_eu_20250523.csv',
+            'data/engwe_us_20250523.csv',
+            'data/fiido_20250523.csv',
+            'data/lectric_ebikes_20250523.csv',
+            'data/rad_power_bikes_us_20250523.csv'
         ];
 
         const combinedData = [];
