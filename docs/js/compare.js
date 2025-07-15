@@ -92,13 +92,27 @@ class EBikeCompare {
             if (bike.images) {
                 try {
                     if (bike.images.startsWith('[')) {
-                        images = JSON.parse(bike.images);
+                        // Convert Python list syntax (single quotes) to JSON syntax (double quotes)
+                        const jsonString = bike.images.replace(/'/g, '"');
+                        images = JSON.parse(jsonString);
                     } else {
                         images = bike.images.split(',').map(img => img.trim()).filter(img => img);
                     }
                 } catch (error) {
-                    images = bike.images ? [bike.images] : [];
+                    console.warn('Failed to parse images for bike:', bike.name, 'Images data:', bike.images);
+                    // If parsing fails, try splitting by comma as fallback
+                    if (bike.images.includes(',')) {
+                        images = bike.images.split(',').map(img => img.trim()).filter(img => img);
+                    } else {
+                        // Treat as single image
+                        images = bike.images ? [bike.images] : [];
+                    }
                 }
+            }
+
+            // Ensure images is always an array
+            if (!Array.isArray(images)) {
+                images = [images].filter(img => img);
             }
 
             // Clean and process price
